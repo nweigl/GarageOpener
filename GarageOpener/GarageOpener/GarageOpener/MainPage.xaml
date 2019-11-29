@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="GarageOpener.MainPage">
+
+    <StackLayout Orientation="Horizontal" HorizontalOptions="CenterAndExpand" VerticalOptions="Center">
+        <StackLayout Orientation="Vertical">
+            <Button Text="Door One" Command="{Binding DoorOneCommand}" />
+            <Label Text="Status:" />
+            <Label Text="{Binding DoorOneStatus}" />
+        </StackLayout>
+        <StackLayout Orientation="Vertical">
+            <Button Text="Door Two" Command="{Binding DoorTwoCommand}" />
+            <Label Text="Status:" />
+            <Label Text="{Binding DoorTwoStatus}" />
+        </StackLayout>
+    </StackLayout>
+
+</ContentPage>
