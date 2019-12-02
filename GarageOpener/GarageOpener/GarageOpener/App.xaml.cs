@@ -1,5 +1,8 @@
-﻿using Autofac;
+﻿using System.Timers;
+using Autofac;
 using GarageOpener.Modules;
+using GarageOpener.Services;
+using GarageOpener.ViewModels;
 using Xamarin.Forms;
 using Xamarin.Forms.Internals;
 
@@ -7,8 +10,9 @@ namespace GarageOpener
 {
     public partial class App : Application
     {
-        static IContainer container;
-        static readonly ContainerBuilder builder = new ContainerBuilder();
+        private static IContainer container;
+        private static readonly ContainerBuilder builder = new ContainerBuilder();
+        private static readonly Timer refreshTimer = new Timer(5000);
 
         public App()
         {
@@ -16,33 +20,43 @@ namespace GarageOpener
             DependencyResolver.ResolveUsing(type => container.IsRegistered(type) ? container.Resolve(type) : null);
 
             MainPage = new NavigationPage(container.Resolve<MainPage>());
+            refreshTimer.Elapsed += (s, e) => MessagingCenter.Send<App>(this, "RefreshTimerElapsed");
         }
 
         protected override void OnStart()
         {
-            // Handle when your app starts
+            refreshTimer.Start();
         }
 
         protected override void OnSleep()
         {
-            // Handle when your app sleeps
+            refreshTimer.Stop();
         }
 
         protected override void OnResume()
         {
-            // Handle when your app resumes
+            refreshTimer.Start();
         }
 
         public static void RegisterModules()
         {
             builder.RegisterModule(new ViewModelModule());
             builder.RegisterModule(new ViewModule());
+            builder.RegisterModule(new ServiceModule());
+        }
+
+        public static void RegisterViews()
+        {
+            var viewLocator = container.Resolve<IViewLocator>();
+            viewLocator.Register<MainPageViewModel, MainPage>();
+            viewLocator.Register<SettingsPageViewModel, SettingsPage>();
         }
 
         public static void BuildContainer()
         {
             RegisterModules();
             container = builder.Build();
+            RegisterViews();
         }
     }
 }

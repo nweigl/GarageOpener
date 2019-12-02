@@ -7,6 +7,7 @@ namespace GarageOpener.Modules
         protected override void Load(ContainerBuilder builder)
         {
             builder.RegisterType<MainPage>();
+            builder.RegisterType<SettingsPage>();
         }
     }
 }

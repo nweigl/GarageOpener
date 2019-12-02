@@ -1,22 +1,54 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d"
-             x:Class="GarageOpener.MainPage">
+<ContentPage
+    x:Class="GarageOpener.MainPage"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:converters="clr-namespace:GarageOpener.Converters"
+    xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <ContentPage.Resources>
+        <converters:BooleanNegationConverter x:Key="BooleanNegationConverter" />
+    </ContentPage.Resources>
 
-    <StackLayout Orientation="Horizontal" HorizontalOptions="CenterAndExpand" VerticalOptions="Center">
-        <StackLayout Orientation="Vertical">
-            <Button Text="Door One" Command="{Binding DoorOneCommand}" />
-            <Label Text="Status:" />
-            <Label Text="{Binding DoorOneStatus}" />
+    <NavigationPage.TitleView>
+        <StackLayout Orientation="Horizontal">
+            <Button
+                BackgroundColor="Transparent"
+                BorderColor="Transparent"
+                Command="{Binding SettingsCommand}"
+                FontFamily="{StaticResource FontAwesomeSolid}"
+                HorizontalOptions="EndAndExpand"
+                Text="&#xf013;"
+                TextColor="White" />
         </StackLayout>
-        <StackLayout Orientation="Vertical">
-            <Button Text="Door Two" Command="{Binding DoorTwoCommand}" />
-            <Label Text="Status:" />
-            <Label Text="{Binding DoorTwoStatus}" />
+    </NavigationPage.TitleView>
+    <Grid>
+        <StackLayout
+            HorizontalOptions="CenterAndExpand"
+            IsVisible="{Binding IsRegistered}"
+            Orientation="Horizontal"
+            VerticalOptions="Center">
+            <StackLayout Orientation="Vertical">
+                <Button Command="{Binding DoorOneCommand}" Text="Door One" />
+                <Label Text="Status:" />
+                <Label Text="{Binding DoorOneStatus}" />
+            </StackLayout>
+            <StackLayout Orientation="Vertical">
+                <Button Command="{Binding DoorTwoCommand}" Text="Door Two" />
+                <Label Text="Status:" />
+                <Label Text="{Binding DoorTwoStatus}" />
+            </StackLayout>
         </StackLayout>
-    </StackLayout>
 
+        <StackLayout
+            HorizontalOptions="CenterAndExpand"
+            IsVisible="{Binding IsRegistered, Converter={StaticResource BooleanNegationConverter}}"
+            VerticalOptions="CenterAndExpand">
+            <Label
+                FontSize="Large"
+                Text="Please register with IOT Hub under settings"
+                TextColor="Gray" />
+        </StackLayout>
+    </Grid>
 </ContentPage>

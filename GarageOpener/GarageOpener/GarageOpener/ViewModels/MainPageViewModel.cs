@@ -1,5 +1,6 @@
-﻿using System.Timers;
-using System.Windows.Input;
+﻿using System.Windows.Input;
+using GarageOpener.Common;
+using GarageOpener.Services;
 using Microsoft.Azure.Devices;
 using Microsoft.Azure.Devices.Shared;
 using Xamarin.Forms;
@@ -8,25 +9,36 @@ namespace GarageOpener.ViewModels
 {
     public class MainPageViewModel : BaseViewModel
     {
+        private readonly INavigationService _navigationService;
         private ServiceClient client;
         private RegistryManager registryManager;
-        private string connectionString = "<INSERT IOT HUB CONNECTION STRING HERE>";
-        private string deviceId = "<INSERT DEVICE ID HERE>";
-
+        private string connectionString;
+        private string deviceId;
         private string doorOneStatus;
         private string doorTwoStatus;
 
-        public MainPageViewModel()
+        public MainPageViewModel(INavigationService navigationService)
         {
-            client = ServiceClient.CreateFromConnectionString(connectionString);
-            registryManager = RegistryManager.CreateFromConnectionString(connectionString);
-            Timer timer = new Timer(1000);
-            timer.Elapsed += GetDeviceTwinState;
-            timer.Start();
+            _navigationService = navigationService;
+
+            connectionString = AppSettings.ConnectionString;
+            deviceId = AppSettings.DeviceId;
+
+            if (!string.IsNullOrEmpty(connectionString) && !string.IsNullOrEmpty(deviceId))
+            {
+                client = ServiceClient.CreateFromConnectionString(connectionString);
+                registryManager = RegistryManager.CreateFromConnectionString(connectionString);
+                GetDeviceTwinState();
+
+                MessagingCenter.Subscribe<App>(this, "RefreshTimerElapsed", (sender) => GetDeviceTwinState());
+            }
+
+            MessagingCenter.Subscribe<SettingsPageViewModel>(this, "SettingsUpdated", (sender) => SettingsUpdated());
         }
 
-        public ICommand DoorOneCommand => new Command(DoorOneExecute);
-        public ICommand DoorTwoCommand => new Command(DoorTwoExecute);
+        public ICommand DoorOneCommand => new Command(DoorOneExecute, (s) => IsRegistered);
+        public ICommand DoorTwoCommand => new Command(DoorTwoExecute, (s) => IsRegistered);
+        public ICommand SettingsCommand => new Command(SettingsExecute);
 
         public string DoorOneStatus
         {
@@ -60,6 +72,8 @@ namespace GarageOpener.ViewModels
             }
         }
 
+        public bool IsRegistered => !string.IsNullOrEmpty(connectionString) && !string.IsNullOrEmpty(deviceId);
+
         private async void DoorTwoExecute(object obj)
         {
             var result = await client.InvokeDeviceMethodAsync(deviceId, new CloudToDeviceMethod("CycleDoorTwo"));
@@ -70,12 +84,52 @@ namespace GarageOpener.ViewModels
             var result = await client.InvokeDeviceMethodAsync(deviceId, new CloudToDeviceMethod("CycleDoorOne"));
         }
 
-        private async void GetDeviceTwinState(object sender, ElapsedEventArgs e)
+        private async void SettingsExecute(object obj)
+        {
+            await _navigationService.NavigateTo<SettingsPageViewModel>();
+        }
+
+        private async void GetDeviceTwinState()
         {
             Twin twin = await registryManager.GetTwinAsync(deviceId);
 
+            if (twin == null)
+            {
+                await App.Current.MainPage.DisplayAlert("Connection Error", "Door status could not be read.", "OK");
+                return;
+            }
+
             DoorOneStatus = twin.Properties.Reported["DoorOneStatus"];
             DoorTwoStatus = twin.Properties.Reported["DoorTwoStatus"];
+        }
+
+        private async void SettingsUpdated()
+        {
+            connectionString = AppSettings.ConnectionString;
+            deviceId = AppSettings.DeviceId;
+
+            if (!string.IsNullOrEmpty(connectionString) && !string.IsNullOrEmpty(deviceId))
+            {
+                if (client != null)
+                {
+                    await client.CloseAsync();
+                }
+
+                if (registryManager != null)
+                {
+                    await registryManager.CloseAsync();
+                }
+
+                client = ServiceClient.CreateFromConnectionString(connectionString);
+                registryManager = RegistryManager.CreateFromConnectionString(connectionString);
+                GetDeviceTwinState();
+
+                MessagingCenter.Subscribe<App>(this, "RefreshTimerElapsed", (sender) => GetDeviceTwinState());
+            }
+
+            OnPropertyChanged(nameof(IsRegistered));
+            ((Command)DoorOneCommand).ChangeCanExecute();
+            ((Command)DoorTwoCommand).ChangeCanExecute();
         }
     }
 }
